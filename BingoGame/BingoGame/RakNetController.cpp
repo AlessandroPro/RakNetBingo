@@ -85,7 +85,7 @@ std::list<Message> RakNetController:: RecvData()
 			bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 			bsIn.Read(rs);
 
-			Message newMessage(packet->data[0], packet->systemAddress, std::string(rs.C_String()));
+			Message newMessage(packet->data[0], packet->guid, std::string(rs.C_String()));
 			customRecvMessages.push_back(newMessage);
 
 			continue;
@@ -102,11 +102,11 @@ std::list<Message> RakNetController:: RecvData()
 				break;
 			case ID_CONNECTION_REQUEST_ACCEPTED:
 				printf("Our connection request has been accepted.\n");
-				m_peerGUID = packet->systemAddress;
+				m_peerGUIDs.emplace(packet->guid);
 				break;
 			case ID_NEW_INCOMING_CONNECTION:
 				printf("A connection is incoming.\n");
-				m_peerGUID = packet->systemAddress;
+				m_peerGUIDs.emplace(packet->guid);
 				break;
 			case ID_NO_FREE_INCOMING_CONNECTIONS:
 				printf("The server is full.\n");

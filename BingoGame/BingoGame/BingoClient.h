@@ -12,5 +12,6 @@ public:
 	bool update(RakNetController& rn) override;
 	void start() override;
 	void processMessage(Message& message) override;
+	std::list<int> parseBingoNums(std::string& bingoNums);
 };
 

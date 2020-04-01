@@ -5,14 +5,15 @@
 
 #include "RakPeerInterface.h"
 #include <list>
+#include <set>
 
 struct Message
 {
 	RakNet::MessageID id;
-	RakNet::AddressOrGUID peerGUID;
+	RakNet::RakNetGUID peerGUID;
 	std::string data;
 
-	Message(RakNet::MessageID _id, RakNet::AddressOrGUID _peerGUID, std::string _data) :
+	Message(RakNet::MessageID _id, RakNet::RakNetGUID _peerGUID, std::string _data) :
 		id(_id), peerGUID(_peerGUID), data(_data) {}
 };
 
@@ -24,7 +25,7 @@ private:
 	bool m_isServer;
 
 public:
-	RakNet::AddressOrGUID m_peerGUID;
+	std::set<RakNet::RakNetGUID> m_peerGUIDs;
 
 //Methods
 public:
