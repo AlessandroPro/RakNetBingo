@@ -6,10 +6,9 @@ class BingoGame
 {
 
 // Members
-
 private:
 	BingoPlayer* bingoPlayer;
-	RakNetController rn;
+	RakNetController* rn;
 
 // Methods
 
@@ -17,10 +16,5 @@ public:
 	int initialize(int argc, char* argv[]);
 	void gameLoop();
 	void cleanup();
-
-private:
-	
-
-
 };
 

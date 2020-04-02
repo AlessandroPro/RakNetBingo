@@ -66,10 +66,11 @@ bool RakNetController::SendData(Message& message)
 	bsOut.Write(message.data.c_str()); 
 	m_peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, message.peerGUID, false); 
 
-	printf("\nMessage sent\n"); 
+	//printf("\nMessage sent\n"); 
 	return true;
 }
 
+// Processes default messages and returns a lsit of any custom messages
 std::list<Message> RakNetController:: RecvData()
 {
 	std::list<Message> customRecvMessages;
@@ -112,12 +113,14 @@ std::list<Message> RakNetController:: RecvData()
 				printf("The server is full.\n");
 				break;
 			case ID_DISCONNECTION_NOTIFICATION:
+				m_peerGUIDs.erase(packet->guid);
 				if (m_isServer)
 					printf("A client has disconnected.\n");
 				else
 					printf("We have been disconnected.\n");
 				break;
 			case ID_CONNECTION_LOST:
+				m_peerGUIDs.erase(packet->guid);
 				if (m_isServer)
 					printf("A client lost the connection.\n");
 				else

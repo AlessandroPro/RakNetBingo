@@ -5,17 +5,18 @@
 #include <conio.h>
 #include <time.h>
 
-BingoServer::BingoServer() : bingoNums{},  randGen(time(NULL))
+BingoServer::BingoServer() : bingoNums{}, clientPlayers(), randGen(time(NULL))
 {
+	clientPlayers.clear();
 	for (int i = 0; i < TOTAL_BINGO_NUMS; i++)
 	{
 		bingoNums[i] = BINGO_START_NUM + i;
 	}
 }
 
-bool BingoServer::update(RakNetController& rn)
+bool BingoServer::update()
 { 
-	std::list<Message> recMessages = rn.RecvData();
+	std::list<Message> recMessages = rn->RecvData();
 	for (auto& message : recMessages)
 	{
 		processMessage(message);
@@ -29,36 +30,17 @@ bool BingoServer::update(RakNetController& rn)
 	{
 		key = _getch();
 		ss << key;
-		//printf("%c", key);
 
-		if (key == 32 && !gameStarted)
+		if (key == 's' && !gameStarted)
 		{
-			//StartGame();
-			std::cout << "GAME STARTED!" << std::endl;
-			lastDrawnIndex = 0;
-			int numClients = rn.m_peerGUIDs.size();
-			
-			
-			int clientIndex = 0;
-			for (auto& guid : rn.m_peerGUIDs)
+			if ((rn->m_peerGUIDs).size() > 0)
 			{
-				std::string bingoCardNumList = "";
-				bingoCardNumList += std::to_string(bingoNums[clientIndex]) + ":";
-				shuffleBingoNums(numClients);
-				for (int i = 0; i < BINGO_CARD_SIZE - 1; i++)
-				{
-					int nextBingoNum = bingoNums[numClients + i];
-					bingoCardNumList += std::to_string(nextBingoNum) + ":";
-				}
-
-				RakNet::MessageID messageID = (RakNet::MessageID) ID_BINGO_CARD_CREATED;
-				Message newMessage(messageID, guid, bingoCardNumList);
-				rn.SendData(newMessage);
-
-				clientIndex++;
+				startGame();
 			}
-			gameStarted = true;
-			shuffleBingoNums(0);
+			else
+			{
+				std::cout << "We need at least 1 player to begin!" << std::endl;
+			}
 		}
 		else if (key == 27)
 		{
@@ -72,22 +54,23 @@ bool BingoServer::update(RakNetController& rn)
 		double deltaTime = GetTickCount() - currentTime;
 		timer += deltaTime;
 
-		if (timer > 1000)
+		if (timer > DRAW_TIME_MS)
 		{
 			// All possible bingo nums have been drawn (should never happen)
 			if (lastDrawnIndex >= TOTAL_BINGO_NUMS)
 			{
-				std::cout << "No more numbers to draw! Someone should have won by now..." << std::endl;
-				//EndGame();
+				std::cout << "No more numbers to draw! Someone should have won by now..." << std::endl << std::endl;
+				gameStarted = false;
+				start();
 			}
 			else
 			{
 				int drawNum = drawNumber();
 				RakNet::MessageID messageID = (RakNet::MessageID) ID_NUMBER_DRAWN;
-				for (auto& guid : rn.m_peerGUIDs)
+				for (auto& guid : clientPlayers)
 				{
 					Message newMessage(messageID, guid, std::to_string(drawNum));
-					rn.SendData(newMessage);
+					rn->SendData(newMessage);
 				}
 			}
 
@@ -96,33 +79,49 @@ bool BingoServer::update(RakNetController& rn)
 	}
 
 	return true;
+}
 
-	//while ((key != '\r') && (key != 27))
-	//{
-	//	if (!gameStarted)
-	//	{
+void BingoServer::startGame()
+{
+	lastDrawnIndex = 0;
+	clientPlayers.clear();
+	for (auto& guid : rn->m_peerGUIDs)
+	{
+		clientPlayers.emplace(guid);
+	}
+	int numClients = clientPlayers.size();
 
-	//	}
+	std::cout << "GAME STARTED!" << std::endl;
+	std::cout << "Number of players: " << numClients << std::endl;
 
-	//	if (_kbhit())
-	//	{
-	//		key = _getch();
-	//		ss << key;
-	//		printf("%c", key);
-	//	}
-	//	rn.RecvData();
-	//}
-	//if (key == 27)
-	//	break;
+	// Generate and send bingo card nubmers for client
+	int clientIndex = 0;
+	for (auto& guid : clientPlayers)
+	{
+		std::string bingoCardNumList = "";
+		bingoCardNumList += std::to_string(bingoNums[clientIndex]) + ":";
+		shuffleBingoNums(numClients);
+		for (int i = 0; i < BINGO_CARD_SIZE - 1; i++)
+		{
+			int nextBingoNum = bingoNums[numClients + i];
+			bingoCardNumList += std::to_string(nextBingoNum) + ":";
+		}
 
-	//rn.SendData(ss.str().c_str());
+		RakNet::MessageID messageID = (RakNet::MessageID) ID_BINGO_CARD_CREATED;
+		Message newMessage(messageID, guid, bingoCardNumList);
+		rn->SendData(newMessage);
+
+		clientIndex++;
+	}
+	gameStarted = true;
+	shuffleBingoNums(0);
 }
 
 void BingoServer::start()
 {
 	std::cout << "Welcome to Bingo!" << std::endl;
 	std::cout << "You are the dealer!" << std::endl << std::endl;
-	std::cout << "Ready?\n\n Start Game [Space]    End [Esc]" << std::endl;
+	std::cout << "Ready?\n\n Start Game [s]    End [Esc]" << std::endl;
 }
 
 int BingoServer::drawNumber()
@@ -156,12 +155,34 @@ void BingoServer::processMessage(Message& message)
 {
 	switch (message.id)
 	{
-	case ID_BINGO_WINNER:
-		std::cout << "We have a winner!" << std::endl;
-		//EndGame()
-		gameStarted = false;
-		break;
-	default:
-		std::cout << "I can't do anything with this message (ID: " << message.id << std::endl;
+		case ID_BINGO_CARD_COMPLETED:
+		{
+			if (!gameStarted)
+			{
+				break;
+			}
+			std::cout << "We have a winner!" << std::endl;
+			std::cout << "The game has ended." << std::endl;
+			gameStarted = false;
+
+			for (auto& guid : clientPlayers)
+			{
+				RakNet::MessageID messageID = (RakNet::MessageID) ID_BINGO_GAME_END;
+				std::string winnerMessage;
+				if (guid == message.peerGUID)
+				{
+					winnerMessage = "You are the Winner!!";
+				}
+				else
+				{
+					winnerMessage = "You lost...";
+				}
+				Message newMessage(messageID, guid, winnerMessage);
+				rn->SendData(newMessage);
+			}
+			break;
+		}
+		default:
+			std::cout << "I can't do anything with this message (ID: " << message.id << std::endl;
 	}
 }

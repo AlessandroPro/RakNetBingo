@@ -15,14 +15,14 @@
 //
 //	if (strcmp(argv[1], "server") == 0) 
 //	{ 
-//		if ((!rn.Initialize()) || (!rn.CreateServer(27015))) 
+//		if ((!rn->Initialize()) || (!rn->CreateServer(27015))) 
 //		{ 
 //			return -1; 
 //		} 
 //	}
 //	else if(strcmp(argv[1], "client") == 0) 
 //	{ 
-//		if ((!rn.Initialize()) || (!rn.CreateClient("127.0.0.1", 27015))) 
+//		if ((!rn->Initialize()) || (!rn->CreateClient("127.0.0.1", 27015))) 
 //		{ 
 //			return -1; 
 //		} 
@@ -46,12 +46,12 @@
 //				ss << key; 
 //				printf("%c", key); 
 //			}
-//			rn.RecvData(); 
+//			rn->RecvData(); 
 //		}
 //		if (key == 27) 
 //			break; 
 //
-//		rn.SendData(ss.str().c_str()); 
+//		rn->SendData(ss.str().c_str()); 
 //	} 
 //}
 
@@ -61,7 +61,7 @@
 //	if (retValue == 0)
 //	{
 //		GameLoop();
-//		rn.Cleanup();
+//		rn->Cleanup();
 //	}
 //	return retValue;
 //}

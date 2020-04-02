@@ -6,6 +6,9 @@
 
 #define BINGO_CARD_NUM_ROWS 3
 #define BINGO_CARD_NUM_COLS 3
+#define TOTAL_BINGO_NUMS 90
+#define BINGO_START_NUM 10
+#define BINGO_CARD_SIZE 9
 
 class BingoCard
 {
@@ -13,9 +16,6 @@ class BingoCard
 // Members
 
 private:
-	int const minNum = 10;
-	int const maxNum = 99;
-
 	std::vector<int> cardNumbers;
 	std::set<int> markedNumbers;
 

@@ -13,9 +13,11 @@ int BingoGame::initialize(int argc, char* argv[])
 		return -1;
 	}
 
+	rn = new RakNetController();
+
 	if (strcmp(argv[1], "server") == 0)
 	{
-		if ((!rn.Initialize()) || (!rn.CreateServer(27015)))
+		if ((!rn->Initialize()) || (!rn->CreateServer(27015)))
 		{
 			return -1;
 		}
@@ -23,13 +25,15 @@ int BingoGame::initialize(int argc, char* argv[])
 	}
 	else if (strcmp(argv[1], "client") == 0)
 	{
-		if ((!rn.Initialize()) || (!rn.CreateClient("127.0.0.1", 27015)))
+		if ((!rn->Initialize()) || (!rn->CreateClient("127.0.0.1", 27015)))
 		{
 			return -1;
 		}
 		bingoPlayer = new BingoClient();
 	}
 	else return -1;
+
+	bingoPlayer->rn = rn;
 
 	return 0;
 }
@@ -38,7 +42,6 @@ void BingoGame::gameLoop()
 {
 	if (bingoPlayer == nullptr)
 	{
-		cleanup();
 		return;
 	}
 
@@ -46,17 +49,16 @@ void BingoGame::gameLoop()
 
 	while (true)
 	{
-		if (!bingoPlayer->update(rn))
+		if (!bingoPlayer->update())
 		{
 			break;
 		}
 	}
-
-	cleanup();
 }
 
 void BingoGame::cleanup()
 {
-	rn.Cleanup();
+	rn->Cleanup();
 	delete bingoPlayer;
+	delete rn;
 }
